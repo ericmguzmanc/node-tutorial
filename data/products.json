@@ -1,1 +1,20 @@
-[{"title":"harry potter"},{"title":"Narnia Chronicles"},{"title":"Millenium Saga"},{"title":"titan"}]
+[
+    {
+        "title": "Twilight",
+        "imageUrl": "https://www.femalefirst.co.uk/image-library/port/1000/t/twilight-book-cover.jpg",
+        "description": "A young vampire falls in love with the new girl in town.",
+        "price": "19.99"
+    },
+    {
+        "title": "Harry Potter #1",
+        "imageUrl": "https://i.pinimg.com/736x/1b/2b/fa/1b2bfa193ec0b2e72af49991ea0aff1a.jpg",
+        "description": "He survived the Avada Kadavra spell, he has a mission, to defeat Voldemort.",
+        "price": "25.99"
+    },
+    {
+        "title": "The Lord of The Rings #1",
+        "imageUrl": "https://www.bibdsl.co.uk/imagegallery2/publisher/batch2641/9780008376062.jpg",
+        "description": "The ring of power must be destroyed, could our heroes help with that?",
+        "price": "25.99"
+    }
+]
