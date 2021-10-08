@@ -6,6 +6,7 @@ const app = express();
 
 const errorController = require("./controllers/error");
 
+
 // ℹ️ Using express we set the view engine to pug
 // app.set('view engine', 'pug');
 app.set('view engine', 'ejs');

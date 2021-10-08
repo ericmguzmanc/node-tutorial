@@ -2,36 +2,41 @@ const Product = require("../models/product");
 const Cart = require("../models/cart");
 
 exports.getProducts = (req, res, next) => {
-    Product.fetchAll((products) => {
-        // ℹ️ this will use the default render set in app.js, We already specified the views folder in app.js
+    Product.fetchAll()
+    .then(([rows]) => {
         res.render("shop/product-list", {
-            products,
+            products: rows,
             pageTitle: "All Products",
             path: "/products",
         });
-    });
+    })
+    .catch(err => console.log(err));
 }
 
 exports.getProduct = (req, res, next) => {
     const productId = req.params.productId;
-    Product.findById(productId, product => {
-        res.render("shop/product-detail", {
-            product,
-            pageTitle: product.title,
-            path: "/products"
+    Product.findById(productId)
+        .then(([product]) => {
+            res.render("shop/product-detail", {
+                product: product[0],
+                pageTitle: product[0].title,
+                path: "/products"
+            });
         })
-    });
+        .catch(err => console.log(err));
 }
 
 exports.getIndex = (req, res, next) => {
-    Product.fetchAll((products) => {
+    Product.fetchAll()
+    .then(([rows, fieldData]) => {
         // ℹ️ this will use the default render set in app.js, We already specified the views folder in app.js
         res.render("shop/index", {
-            products,
+            products: rows,
             pageTitle: "Shop",
             path: "/"
         });
-    });
+    })
+    .catch(err => console.log(err))
 }
 
 exports.getCart = (req, res, next) => {
