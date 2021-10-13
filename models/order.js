@@ -2,9 +2,9 @@ const { Model, DataTypes } = require("sequelize");
 
 const sequelize = require("../util/database");
 
-class Cart extends Model {}
+class Order extends Model {}
 
-Cart.init({
+Order.init({
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -13,7 +13,7 @@ Cart.init({
     }
 }, {
     sequelize,
-    modelName: "cart"
+    modelName: "order"
 });
 
-module.exports = Cart;
+module.exports = Order;
