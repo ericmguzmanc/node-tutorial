@@ -1,5 +1,5 @@
 const Product = require("../models/product");
-const User = require("../models/user");
+const {ObjectId} = require("mongodb");
 
 exports.getAddProduct = (req, res, next) => {
     res.render("admin/edit-product", {
@@ -15,26 +15,13 @@ exports.postAddProduct = async (req, res, next) => {
     const description = req.body.description;
     const price = req.body.price;
 
-    // this method is from the assosiations
-    // req.user was assigned a dummy logged user object from sequelize
-    await req.user.createProduct({
-        title,
-        price,
-        imageUrl,
-        description,
-        // userId: req.user.id // Our Dummy user middle ware will append user to every request
-        
-    });
+    const product = new Product(title, price, description, imageUrl, null, req.user._id);
 
-    // await Product.create({
-    //     title,
-    //     price,
-    //     imageUrl,
-    //     description,
-    //     // userId: req.user.id // Our Dummy user middle ware will append user to every request
-    // });
+    const productSaved = await product.save();
 
-    res.redirect("/admin/products");
+    if (productSaved) {
+        res.redirect("/admin/products");
+    }
 };
 
 exports.getEditProduct = async (req, res, next) => {
@@ -47,18 +34,11 @@ exports.getEditProduct = async (req, res, next) => {
 
     const productId = req.params.productId;
 
-    // const product = await Product.findByPk(productId);
-    const products = await req.user.getProducts({
-        where: {
-            id: productId
-        }
-    });
+    const product = await Product.findById(productId);
 
-    if (products === null) {
+    if (product === null) {
         return res.redirect("/");
     }
-
-    const product = products[0];
 
     res.render("admin/edit-product", {
         pageTitle: "Edit Product",
@@ -74,25 +54,17 @@ exports.postEditProduct = async (req, res, next) => {
     const imageUrl = req.body.imageUrl;
     const description = req.body.description;
     const price = req.body.price;
-    
-    const updatedProduct = await Product.update({
-        title,
-        price,
-        imageUrl,
-        description,
-    }, {
-        where: {
-            id: productId
-        }
-    });
 
-    if (updatedProduct !== null) {
+    const productInstance = new Product(title, price, description, imageUrl, productId);
+    const updatedProduct = await productInstance.save();
+
+    if (updatedProduct) {
         res.redirect("/products");
     }
 };
 
 exports.getProducts = async (req, res, next) => {
-    const products = await req.user.getProducts();
+    const products = await Product.fetchAll();
     if (products === null) {
         console.log("No Producs Found! 😔");
     } else {
@@ -106,12 +78,8 @@ exports.getProducts = async (req, res, next) => {
 
 exports.postDeleteProduct = async(req, res, next) => {
     const productId = req.body.productId;
-    
-    await Product.destroy({
-        where: {
-            id: productId
-        }
-    });
+
+    await Product.deleteById(productId);
 
     res.redirect("/admin/products");
 };

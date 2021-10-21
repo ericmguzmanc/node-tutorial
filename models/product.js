@@ -1,38 +1,43 @@
-const { Model, DataTypes } = require("sequelize");
+const { getDb } = require("../util/database");
+const {ObjectId} = require("mongodb");
 
-const sequelize = require("../util/database");
-
-class Product extends Model {}
-
-Product.init(
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            allowNull: false,
-            primaryKey: true,
-        },
-        title: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        price: {
-            type: DataTypes.DOUBLE,
-            allowNull: false,
-        },
-        imageUrl: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        description: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-    },
-    {
-        sequelize, // Pass connection instance
-        modelName: "product", // model name
+class Product {
+    constructor(title, price, description, imageUrl, id, userId) {
+        this.title = title;
+        this.price = price;
+        this.description = description;
+        this.imageUrl = imageUrl;
+        this._id = id ? ObjectId(id) : null;
+        this.userId = userId;
     }
-);
+
+     save() {
+        const db = getDb();
+
+        if (this._id) {
+            // update
+            return db.collection("products")
+                .updateOne( { _id: this._id }, { $set:  this } )
+        } else {
+            return db.collection("products").insertOne(this);
+        }
+    }
+
+    static async fetchAll() {
+        const db = getDb();
+        return await db.collection('products').find().toArray();
+    }
+
+    static async findById(id) {
+        const db = getDb();
+        // ℹ️ we use .next because the returned object is a cursor, the .next take the first
+        return await db.collection('products').find({ _id: ObjectId(id) }).next();
+    }
+
+    static async deleteById(id) {
+        const db = getDb();
+        return await db.collection('products').deleteOne({ _id: ObjectId(id) });
+    }
+}
 
 module.exports = Product;

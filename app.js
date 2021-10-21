@@ -1,17 +1,15 @@
 const path = require("path");
 const express = require("express");
 
-// ℹ️ Database related imports
-const initDatabase = require("./util/database");
-const sequelize = require("./util/database");
-const dbAssociations = require("./util/dbAssosiations");
 
 const app = express();
 
 const errorController = require("./controllers/error");
+const database = require("./util/database");
+
+const User = require("./models/user");
 
 // ℹ️ Using express we set the view engine to pug
-// app.set('view engine', 'pug');
 app.set("view engine", "ejs");
 // ℹ️ Where are the views in our project
 app.set("views", "views");
@@ -19,7 +17,6 @@ app.set("views", "views");
 // ℹ️ Routes related imports
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
-const User = require("./models/user");
 
 app.use(express.urlencoded({ extended: true }));
 /**
@@ -30,9 +27,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // 😔 This piece of code will be moved in next lections
 app.use( async (req, res, next) => {
-    const user = await User.findByPk(1);
+    const user = await User.findById("616ea4e2d18dbdce37cb2fbe");
     if (user) {
-        req.user = user;
+        // ℹ️ I create a new user instance to get all the functionality of the user class, within this object
+        req.user = new User(user.name, user.email, user.cart, user._id);
     }
     next();
 });
@@ -44,23 +42,8 @@ app.use(errorController.get404);
 
 // 🎬 Server inizialization
 (async () => {
-    dbAssociations();
-    // await sequelize.sync({ force: true });
-    await sequelize.sync();
 
-    // ℹ️ Creating a dummy user
-    let userExists = await User.findByPk(1);
-
-    // ℹ️ Creates a dummy user
-    if (!userExists) {
-        userExists = await User.create({
-            name: "Max",
-            email: "max@test.com"
-        });
-
-        // ℹ️ Creates a Cart for the dummy user
-        await userExists.createCart();
-    }
+    await database.mongoConnect();
 
     app.listen(4000);
 })();

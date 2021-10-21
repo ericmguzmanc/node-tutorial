@@ -1,7 +1,9 @@
 const Product = require("../models/product");
+const {getDb} = require("../util/database");
+const {ObjectId} = require("mongodb");
 
 exports.getProducts = async (req, res, next) => {
-    const products = await Product.findAll();
+    const products = await Product.fetchAll();
 
     if (products === null) {
         console.log("No Products Found");
@@ -17,22 +19,22 @@ exports.getProducts = async (req, res, next) => {
 exports.getProduct = async (req, res, next) => {
     const productId = req.params.productId;
 
-    const product = await Product.findByPk(productId);
-    if (product === null) {
-        console.log("No Product Found! 😔");
-    } else {
+    const product = await Product.findById(productId);
+    if (product) {
         res.render("shop/product-detail", {
             product: product,
             pageTitle: product.title,
             path: "/products"
         });
+    } else {
+        console.log("No Product Found! 😔");
     }
 }
 
 exports.getIndex = async (req, res, next) => {
-    const products = await Product.findAll();
+    const products = await Product.fetchAll();
 
-    if (products === null) {
+    if (!products) {
         console.log("No Products Available");
     } else {
         res.render("shop/index", {
@@ -46,7 +48,7 @@ exports.getIndex = async (req, res, next) => {
 exports.getCart = async (req, res, next) => {
     const userCart = await req.user.getCart();
     if (userCart !== null) {
-        const cartProducts = await userCart.getProducts();
+        const cartProducts = userCart;
         console.log(cartProducts);
         res.render("shop/cart", {
             path: "/cart",
@@ -59,44 +61,21 @@ exports.getCart = async (req, res, next) => {
 
 exports.postCart = async (req, res, next) => {
     const productId = req.body.productId;
-    const userCart = await req.user.getCart();
-    let newQuantity = 1;
 
-    if (userCart) {
-        const cartProducts = await userCart.getProducts({ where: { id: productId } });
+    const product = await Product.findById(productId);
 
-        let productAlreadyAdded;
-        if (cartProducts.length > 0) {
-            productAlreadyAdded = cartProducts[0];
-        }
-
-        if (productAlreadyAdded) {
-            const oldQuantity = productAlreadyAdded.cartItem.quantity;
-            newQuantity = oldQuantity + 1;
-            await userCart.addProduct(productAlreadyAdded, {
-                through: { quantity: newQuantity }
-            });
-        } else {
-            const newProduct = await Product.findByPk(productId);
-            userCart.addProduct(newProduct, {
-                through: {
-                    quantity: newQuantity
-                }
-            });
-        }
-
+    if (product) {
+        const productAddedToCart = await req.user.addToCart(product);
+        console.log(productAddedToCart);
     }
+
     res.redirect("/cart");
 };
 
 exports.postCartDeleteProduct = async (req, res, next) => {
     const productId = req.body.productId;
-    const userCart = await req.user.getCart();
 
-    const cartProducts = await userCart.getProducts({ where: { id: productId} });
-    const product = cartProducts[0];
-
-    const productDeleted = await product.cartItem.destroy();
+    const productDeleted = await req.user.deleteItemFromCart(productId);
 
     if (productDeleted) {
         res.redirect("/cart");
@@ -104,29 +83,16 @@ exports.postCartDeleteProduct = async (req, res, next) => {
 };
 
 exports.postOrder = async (req, res, next) => {
-    const userCart = await req.user.getCart();
-    const products = await userCart.getProducts();
 
-    if (products.length > 0) {
-        const newOrder = await req.user.createOrder();
+    const addOrder = await req.user.addOrder();
 
-        const mappedProducts = products.map(p => {
-            p.orderItem = { quantity: p.cartItem.quantity };
-            return p;
-        });
-
-        await newOrder.addProducts(mappedProducts);
-
-        await userCart.setProducts(null);
-
+    if (addOrder) {
         res.redirect("/orders");
     }
-
-
 };
 
 exports.getOrders = async (req, res, next) => {
-    const orders = await req.user.getOrders({ include: ["products"] });
+    const orders = await req.user.getOrders();
     if (orders !== null) {
         res.render("shop/orders", {
             path: "/orders",
