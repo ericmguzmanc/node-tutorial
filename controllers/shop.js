@@ -1,72 +1,86 @@
 const Product = require("../models/product");
+const Order = require("../models/order");
 const {getDb} = require("../util/database");
 const {ObjectId} = require("mongodb");
+const { handle } = require("../util/functions");
+
 
 exports.getProducts = async (req, res, next) => {
-    const products = await Product.fetchAll();
+    let [products, error] = await handle(Product.find());
 
-    if (products === null) {
-        console.log("No Products Found");
-    } else {
-        res.render("shop/product-list", {
-            products: products,
-            pageTitle: "All Products",
-            path: "/products",
-        });
+    if (error) {
+        throw new Error("Error -> " + error);
     }
+
+    res.render("shop/product-list", {
+        products: products,
+        pageTitle: "All Products",
+        path: "/products",
+    });
+
 }
 
 exports.getProduct = async (req, res, next) => {
     const productId = req.params.productId;
 
-    const product = await Product.findById(productId);
-    if (product) {
-        res.render("shop/product-detail", {
-            product: product,
-            pageTitle: product.title,
-            path: "/products"
-        });
-    } else {
-        console.log("No Product Found! 😔");
+    const [product, error] = await handle(Product.findById(productId));
+
+    if (error) {
+        throw new Error("Error -> product findById " + error);
     }
+
+    res.render("shop/product-detail", {
+        product: product,
+        pageTitle: product.title,
+        path: "/products"
+    });
+
 }
 
 exports.getIndex = async (req, res, next) => {
-    const products = await Product.fetchAll();
+    const [products, error] = await handle(Product.find());
 
-    if (!products) {
-        console.log("No Products Available");
-    } else {
-        res.render("shop/index", {
-            products: products,
-            pageTitle: "Shop",
-            path: "/"
-        });
+    if (error) {
+        throw new Error("Error -> " + error);
     }
+
+    res.render("shop/index", {
+        products: products,
+        pageTitle: "Shop",
+        path: "/"
+    });
 }
 
 exports.getCart = async (req, res, next) => {
-    const userCart = await req.user.getCart();
-    if (userCart !== null) {
-        const cartProducts = userCart;
-        console.log(cartProducts);
-        res.render("shop/cart", {
-            path: "/cart",
-            pageTitle: "Your Cart",
-            products: cartProducts
-        });
+    const [userCart, error] = await handle(req.user.populate("cart.items.productId"));
+
+    if (error) {
+        throw new Error("Error while getting the cart -> " + error);
     }
+
+    const cartProducts = userCart.cart.items;
+
+    res.render("shop/cart", {
+        path: "/cart",
+        pageTitle: "Your Cart",
+        products: cartProducts
+    });
 
 }
 
 exports.postCart = async (req, res, next) => {
     const productId = req.body.productId;
 
-    const product = await Product.findById(productId);
+    const [product, productError] = await handle(Product.findById(productId));
 
-    if (product) {
-        const productAddedToCart = await req.user.addToCart(product);
-        console.log(productAddedToCart);
+    if (productError) {
+        throw new Error("Error finding Product -> " + productError);
+    }
+
+    const [productAddedToCart, productAddedError] = await handle(req.user.addToCart(product));
+
+    if (productAddedError) {
+        throw new Error("Error Adding Product -> " + productAddedError);
     }
 
     res.redirect("/cart");
@@ -75,29 +89,64 @@ exports.postCart = async (req, res, next) => {
 exports.postCartDeleteProduct = async (req, res, next) => {
     const productId = req.body.productId;
 
-    const productDeleted = await req.user.deleteItemFromCart(productId);
+    const [_, error] = await handle(req.user.removeFromCart(productId));
 
-    if (productDeleted) {
-        res.redirect("/cart");
+    if (error) {
+        throw new Error("Error while removing product from cart -> " + error);
     }
+
+    res.redirect("/cart");
 };
 
 exports.postOrder = async (req, res, next) => {
 
-    const addOrder = await req.user.addOrder();
+    const [userCart, userCartError] = await handle(req.user.populate("cart.items.productId"));
 
-    if (addOrder) {
-        res.redirect("/orders");
+    if (userCartError) {
+        throw new Error("Error while getting the cart -> " + userCartError);
     }
+
+    const cartProducts = userCart.cart.items.map(i => {
+        return {
+            quantity: i.quantity,
+            product: { ...i.productId._doc }
+        }
+    });
+
+    const order = new Order({
+        user: {
+            name: req.user.name,
+            userId: req.user
+        },
+        products: cartProducts
+    });
+
+    const [orderSaved, saveOrderError] = await handle(order.save());
+
+    if (saveOrderError) {
+        throw new Error("Save Error while saving order -> " + saveOrderError);
+    }
+
+    const [cart, clearCartError] = await handle(req.user.clearCart());
+
+    if (clearCartError) {
+        throw new Error("Error clearing user cart -> " + clearCartError);
+    }
+
+    res.redirect("/orders");
 };
 
 exports.getOrders = async (req, res, next) => {
-    const orders = await req.user.getOrders();
-    if (orders !== null) {
-        res.render("shop/orders", {
-            path: "/orders",
-            pageTitle: "Your Orders",
-            orders
-        });
+    // const orders = await req.user.getOrders();
+    const [orders, error] = await handle(Order.find({"users._id": req.user._id}));
+
+    if (error) {
+        throw new Error("Error while Order.find -> " + error);
     }
+
+    res.render("shop/orders", {
+        path: "/orders",
+        pageTitle: "Your Orders",
+        orders
+    });
 };

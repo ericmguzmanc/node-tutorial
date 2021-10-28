@@ -1,6 +1,7 @@
 const path = require("path");
 const express = require("express");
 
+const {handle} = require("./util/functions");
 
 const app = express();
 
@@ -27,11 +28,13 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // 😔 This piece of code will be moved in next lections
 app.use( async (req, res, next) => {
-    const user = await User.findById("616ea4e2d18dbdce37cb2fbe");
-    if (user) {
-        // ℹ️ I create a new user instance to get all the functionality of the user class, within this object
-        req.user = new User(user.name, user.email, user.cart, user._id);
+    const [user, error] = await handle(User.findById("617688982aa0f44403f464db"));
+    if (error) {
+        throw new Error("Error while getting user -> " + error);
     }
+    // ℹ️ I create a new user instance to get all the functionality of the user class, within this object
+    req.user = user
+
     next();
 });
 
@@ -43,7 +46,28 @@ app.use(errorController.get404);
 // 🎬 Server inizialization
 (async () => {
 
-    await database.mongoConnect();
+    const [_, error] = await handle(database.mongoConnect());
+
+    if (error) {
+        throw new Error("Cannot connect to database -> " + error);
+    }
+
+    const [findUser, findError] = await handle(User.findOne());
+
+    if (findError) {
+        throw new Error("Error findOne User -> " + findError);
+    }
+
+    if (!findUser) {
+        const user = new User({
+            name: "Eric",
+            email: "eric@test.com",
+            cart: {
+               item: []
+            }
+        });
+        user.save();
+    }
 
     app.listen(4000);
 })();
