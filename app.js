@@ -1,5 +1,7 @@
 const path = require("path");
 const express = require("express");
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
 
 const {handle} = require("./util/functions");
 
@@ -7,6 +9,9 @@ const app = express();
 
 const errorController = require("./controllers/error");
 const database = require("./util/database");
+const {mongoDBStore} = require("./util/database");
+
+const MONGODB_URI = "mongodb+srv://ericmguzmanc:AHS2kRtrU5NdbiN3@cluster0.sypp8.mongodb.net/shop?retryWrites=true&w=majority";
 
 const User = require("./models/user");
 
@@ -18,6 +23,7 @@ app.set("views", "views");
 // ℹ️ Routes related imports
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
+const authRoutes = require("./routes/auth");
 
 app.use(express.urlencoded({ extended: true }));
 /**
@@ -25,6 +31,20 @@ app.use(express.urlencoded({ extended: true }));
  * Using express.static and middleware
  */
 app.use(express.static(path.join(__dirname, "public")));
+
+const store = MongoDBStore({
+    uri: MONGODB_URI,
+    collection: "sessions"
+})
+
+// ⏳ Session middleware
+app.use(session({
+    secret: 'my secret',
+    resave: false,
+    saveUninitialized: false,
+    store: store
+}));
+
 
 // 😔 This piece of code will be moved in next lections
 app.use( async (req, res, next) => {
@@ -40,6 +60,7 @@ app.use( async (req, res, next) => {
 
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 

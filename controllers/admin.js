@@ -1,5 +1,4 @@
 const Product = require("../models/product");
-const {ObjectId} = require("mongodb");
 const {handle} = require("../util/functions");
 
 exports.getAddProduct = (req, res, next) => {
@@ -7,6 +6,7 @@ exports.getAddProduct = (req, res, next) => {
         pageTitle: "Add Product",
         path: "/admin/add-product",
         editing: false,
+        isAuthenticated: req.session.isLoggedIn
     });
 };
 
@@ -49,6 +49,7 @@ exports.getEditProduct = async (req, res, next) => {
         path: "/admin/edit-product",
         editing: editMode,
         product,
+        isAuthenticated: req.session.isLoggedIn
     });
 };
 
@@ -93,6 +94,7 @@ exports.getProducts = async (req, res, next) => {
         products,
         pageTitle: "Admin Products",
         path: "/admin/products",
+        isAuthenticated: req.session.isLoggedIn
     });
 
 };

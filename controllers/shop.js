@@ -1,7 +1,5 @@
 const Product = require("../models/product");
 const Order = require("../models/order");
-const {getDb} = require("../util/database");
-const {ObjectId} = require("mongodb");
 const { handle } = require("../util/functions");
 
 
@@ -12,10 +10,13 @@ exports.getProducts = async (req, res, next) => {
         throw new Error("Error -> " + error);
     }
 
+    console.log(req.session);
+
     res.render("shop/product-list", {
         products: products,
         pageTitle: "All Products",
         path: "/products",
+        isAuthenticated: req.session.isLoggedIn
     });
 
 }
@@ -32,7 +33,8 @@ exports.getProduct = async (req, res, next) => {
     res.render("shop/product-detail", {
         product: product,
         pageTitle: product.title,
-        path: "/products"
+        path: "/products",
+        isAuthenticated: req.session.isLoggedIn
     });
 
 }
@@ -47,7 +49,8 @@ exports.getIndex = async (req, res, next) => {
     res.render("shop/index", {
         products: products,
         pageTitle: "Shop",
-        path: "/"
+        path: "/",
+        isAuthenticated: req.session.isLoggedIn
     });
 }
 
@@ -63,7 +66,8 @@ exports.getCart = async (req, res, next) => {
     res.render("shop/cart", {
         path: "/cart",
         pageTitle: "Your Cart",
-        products: cartProducts
+        products: cartProducts,
+        isAuthenticated: req.session.isLoggedIn
     });
 
 }
@@ -147,6 +151,7 @@ exports.getOrders = async (req, res, next) => {
     res.render("shop/orders", {
         path: "/orders",
         pageTitle: "Your Orders",
-        orders
+        orders,
+        isAuthenticated: req.session.isLoggedIn
     });
 };
