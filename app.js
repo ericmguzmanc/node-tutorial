@@ -2,6 +2,8 @@ const path = require("path");
 const express = require("express");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
+const csrf = require("csurf");
+const flash = require("connect-flash");
 
 const {handle} = require("./util/functions");
 
@@ -35,7 +37,9 @@ app.use(express.static(path.join(__dirname, "public")));
 const store = MongoDBStore({
     uri: MONGODB_URI,
     collection: "sessions"
-})
+});
+
+const csrfProtection = csrf();
 
 // ⏳ Session middleware
 app.use(session({
@@ -45,10 +49,18 @@ app.use(session({
     store: store
 }));
 
+app.use(csrfProtection);
+app.use(flash());
+
 
 // 😔 This piece of code will be moved in next lections
 app.use( async (req, res, next) => {
-    const [user, error] = await handle(User.findById("617688982aa0f44403f464db"));
+    if (!req.session.user) {
+        return next();
+    }
+
+    const [user, error] = await handle(User.findById(req.session.user._id));
+
     if (error) {
         throw new Error("Error while getting user -> " + error);
     }
@@ -56,6 +68,12 @@ app.use( async (req, res, next) => {
     req.user = user
 
     next();
+});
+
+app.use((req, res, next) => {
+   res.locals.isAuthenticated = req.session.isLoggedIn;
+   res.locals.csrfToken = req.csrfToken();
+   next();
 });
 
 app.use("/admin", adminRoutes);
@@ -71,23 +89,6 @@ app.use(errorController.get404);
 
     if (error) {
         throw new Error("Cannot connect to database -> " + error);
-    }
-
-    const [findUser, findError] = await handle(User.findOne());
-
-    if (findError) {
-        throw new Error("Error findOne User -> " + findError);
-    }
-
-    if (!findUser) {
-        const user = new User({
-            name: "Eric",
-            email: "eric@test.com",
-            cart: {
-               item: []
-            }
-        });
-        user.save();
     }
 
     app.listen(4000);
