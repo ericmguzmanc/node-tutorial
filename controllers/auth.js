@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
 const {handle} = require("../util/functions");
@@ -109,4 +110,43 @@ exports.postLogout = (req, res, next) => {
         console.log(err);
         res.redirect("/");
     });
+}
+
+exports.getReset = (req, res, next) => {
+    res.render("auth/reset", {
+        path: "/reset",
+        pageTitle: "Reset Password",
+        errorMessage: getFlashMessage(req)
+    });
+};
+
+exports.postReset = (req, res, next) => {
+    crypto.randomBytes(32, async (err, buffer) => {
+        if (err) {
+            return res.redirect('/reset')
+        }
+
+        const token = buffer.toString('hex');
+
+        const [user, userError] = await handle(User.findOne({email: req.body.email}));
+
+        if (userError) {
+            throw new Error("Error during reset " + userError);
+        }
+
+        if (!user) {
+            req.flash("Error", "No account with that email found.");
+            return res.redirect("/reset");
+        }
+
+        user.resetToken = token;
+        user.resetTokenExpiration = Date.now() + 36600000;
+
+        const [userSaved, userSavedError] = await handle(user.save());
+
+        if (userSavedError) {
+            throw new Error("User saved Error -> " + userSavedError);
+        }
+
+    })
 }
