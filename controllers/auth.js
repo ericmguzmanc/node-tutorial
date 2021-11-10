@@ -152,7 +152,7 @@ exports.postReset = (req, res, next) => {
         }
 
         if (!user) {
-            req.flash("Error", "No account with that email found.");
+            req.flash("error", "No account with that email found.");
             return res.redirect("/reset");
         }
 
@@ -165,5 +165,85 @@ exports.postReset = (req, res, next) => {
             throw new Error("User saved Error -> " + userSavedError);
         }
 
-    })
+        res.redirect("/");
+        const [sent, sentError] = await handle(transporter.sendMail({
+            to: req.body.email,
+            from: "ericmguzmanc@gmail.com",
+            subject: "Password reset",
+            html: `
+                <p>You requested a password reset</p>
+                <p>Click this <a href="http://localhost:4000/reset/${token}">link</a> to set a new password</p>
+            `
+        }));
+
+        if (sentError) {
+            throw new Error("Error while sending email " + sentError);
+        }
+
+    });
 }
+
+exports.getNewPassword = async (req, res, next) => {
+    const token = req.params.token;
+
+    const [user, errorFindUser] = await handle(User.findOne({resetToken: token, resetTokenExpiration: { $gt: Date.now() }}));
+
+    if (errorFindUser) {
+        throw new Error("Error while getting user using token -> " + errorFindUser);
+    }
+
+    if (!user) {
+        req.flash("error", "The token is no longer valid");
+        return res.redirect("/reset");
+    }
+
+
+    res.render("auth/new-password", {
+        path: "/new-password",
+        pageTitle: "New Password",
+        errorMessage: getFlashMessage(req),
+        userId: user._id.toString(),
+        passwordToken: token
+    });
+}
+
+exports.postNewPassword = async (req, res, next) => {
+    const newPassword = req.body.password;
+    const userId = req.body.userId;
+    const passwordToken = req.body.passwordToken;
+
+    const [user, userFindError] = await handle(User.findOne({
+        resetToken: passwordToken,
+        resetTokenExpiration: { $gt: Date.now() },
+        _id: userId
+    }));
+
+    if (userFindError) {
+        throw new Error("Error while getting user in postNewPassword -> " + userFindError);
+    }
+
+    const [hashedPassword, errorHashing] = await handle(bcrypt.hash(newPassword, 12));
+
+    if (errorHashing) {
+        throw Error("Error hashing password -> " + errorHashing);
+    }
+
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpiration = undefined;
+
+
+    const [savedUser, saveUserError] = await handle(user.save());
+
+    if (saveUserError) {
+        throw new Error("Error saving user -> " + saveUserError);
+    }
+
+    res.redirect("/login");
+
+}
+
+
+
+
+

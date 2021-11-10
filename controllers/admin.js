@@ -64,6 +64,10 @@ exports.postEditProduct = async (req, res, next) => {
         throw new Error("Error -> " + productError);
     }
 
+    if (updateProduct.userId.toString() !== req.user._id.toString()) {
+        return res.redirect("/");
+    }
+
     updateProduct.title = title;
     updateProduct.imageUrl = imageUrl;
     updateProduct.description = description;
@@ -81,7 +85,7 @@ exports.postEditProduct = async (req, res, next) => {
 };
 
 exports.getProducts = async (req, res, next) => {
-    const [products, error] = await handle(Product.find());
+    const [products, error] = await handle(Product.find({userId: req.user._id}));
     // .populate("userId")
     // 📝 you can populate after find to populate results with extra objects based on relations like Product -> User
     if (error) {
@@ -99,7 +103,7 @@ exports.getProducts = async (req, res, next) => {
 exports.postDeleteProduct = async(req, res, next) => {
     const productId = req.body.productId;
 
-    const [deleteProduct, deleteError] = await handle(Product.findByIdAndRemove(productId));
+    const [deleteProduct, deleteError] = await handle(Product.deleteOne({_id: productId, userId: req.user._id}));
 
     if (deleteError) {
         throw new Error("Delete error -> "+ deleteError);
