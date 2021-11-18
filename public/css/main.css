@@ -248,6 +248,14 @@ form {
   color: #111111;
 }
 
+.code-error {
+  padding: 5px;
+  border: 1px solid #fda1a1;
+  border-radius: 5px;
+  background: #FFCCCC;
+
+}
+
 @media (min-width: 768px) {
   .main-header__nav {
     display: flex;
