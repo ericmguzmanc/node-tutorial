@@ -1,3 +1,8 @@
+const fs = require("fs");
+const path = require("path");
+
+const PDFdocument = require("pdfkit");
+
 const Product = require("../models/product");
 const Order = require("../models/order");
 const { handle } = require("../util/functions");
@@ -190,5 +195,84 @@ exports.getOrders = async (req, res, next) => {
         const error = new Error(e);
         error.httpStatusCode = 500;
         return next(error);
+    }
+};
+
+exports.getInvoice = async (req, res, next) => {
+    const orderId = req.params.orderId;
+
+    try {
+
+        const [order, orderError] = await handle(Order.findById(orderId));
+        
+        if (orderError) {
+            throw new Error("Error getting order");
+        }
+
+        if (!order) {
+            throw new Error("No order found");
+        }
+
+        if (order.user.userId.toString() !== req.user._id.toString()) {
+            throw new Error("Unauthorized");
+        }
+        
+        const invoiceName = "invoice-"+ orderId + ".pdf";
+        const invoicePath = path.join("data", "invoices", invoiceName);
+
+        const pdf = new PDFdocument();
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
+        pdf.pipe(fs.createWriteStream(invoicePath));
+        pdf.pipe(res); // Remember res is a writeble stream
+
+        pdf.fontSize(26).text("Invoice", {
+            underline: true
+        });
+
+        pdf.fontSize(14);
+
+        pdf.text(" ");
+
+        let totalPrice = 0;
+        order.products.forEach(p => {
+            totalPrice += p.quantity * p.product.price;
+            pdf.text(p.quantity, {
+                align: "left",
+                continued: true
+            });
+
+            pdf.text(`${p.product.title} x ${p.product.price}`, {
+                align: "right"
+            })
+        });
+
+        pdf.text(" ");
+
+        pdf.text("Total Price: $" + totalPrice, { 
+            align: "right"
+        });
+
+        pdf.end();
+
+        // 📝 This works for tiny files but loads the whole file in memory before showing it
+        // we need to be able to stream bigger files in part
+        // fs.readFile(invoicePath, (err, data) => {
+            
+        //     if (err) {
+        //         return next(err);
+        //     }
+            
+        //     res.setHeader("Content-Type", "application/pdf");
+        //     res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
+        //     res.send(data);
+        // });
+        // const file = fs.createReadStream(invoicePath);
+        // res.setHeader("Content-Type", "application/pdf");
+        // res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
+        // file.pipe(res); // ℹ️ Response object is a writable stream
+    } catch (e) {
+        e.httpStatusCode = 500;
+        next(e);
     }
 };

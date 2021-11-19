@@ -4,6 +4,7 @@ const { validationResult } = require("express-validator");
 
 const Product = require("../models/product");
 const {handle} = require("../util/functions");
+const fileHelper = require("../util/file");
 
 exports.getAddProduct = (req, res, next) => {
     res.render("admin/edit-product", {
@@ -18,12 +19,29 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = async (req, res, next) => {
     const title = req.body.title;
-    const imageUrl = req.body.imageUrl;
+    const image = req.file;
     const description = req.body.description;
     const price = req.body.price;
     const userId = req.user._id;
 
+    if (!image) {
+        return res.status(422).render("admin/edit-product", {
+            pageTitle: "Add Product",
+            path: "/admin/edit-product",
+            editing: false,
+            product: {
+                title,
+                price,
+                description
+            },
+            hasError: true,
+            errorMessage: "Attached file is not an image",
+            validationErrors: []
+        });
+    }
     const errors = validationResult(req);
+
+    console.log(image);
 
     try {
         if (!errors.isEmpty()) {
@@ -33,7 +51,6 @@ exports.postAddProduct = async (req, res, next) => {
                 editing: false,
                 product: {
                     title,
-                    imageUrl,
                     price,
                     description
                 },
@@ -42,6 +59,8 @@ exports.postAddProduct = async (req, res, next) => {
                 validationErrors: errors.array()
             });
         }
+
+        const imageUrl = '/' + image.path; 
         
         const product = new Product({ 
             // _id: new mongoose.Types.ObjectId("61938a9597b634032f6581b3"), // this is just to provoke an error
@@ -106,7 +125,7 @@ exports.getEditProduct = async (req, res, next) => {
 exports.postEditProduct = async (req, res, next) => {
     const productId = req.body.productId;
     const title = req.body.title;
-    const imageUrl = req.body.imageUrl;
+    const image = req.file;
     const description = req.body.description;
     const price = req.body.price;
 
@@ -120,7 +139,6 @@ exports.postEditProduct = async (req, res, next) => {
                 editing: true,
                 product: {
                     title,
-                    imageUrl,
                     price,
                     description,
                     _id: productId
@@ -142,7 +160,12 @@ exports.postEditProduct = async (req, res, next) => {
         }
         
         updateProduct.title = title;
-        updateProduct.imageUrl = imageUrl;
+
+        if (image) {
+            await fileHelper.deleteFile(product.imageUrl); 
+            updateProduct.imageUrl = "/" + image.path;
+        }
+
         updateProduct.description = description;
         updateProduct.price = price;
         //ℹ️ Thanks to mongoose, any retrieved product object is also a mongoose object, hence I can use save() from mongoose
@@ -186,6 +209,18 @@ exports.getProducts = async (req, res, next) => {
 exports.postDeleteProduct = async(req, res, next) => {
     try {
         const productId = req.body.productId;
+
+        const [product, productError] = await handle(Product.findById(productId));
+
+        if (productError) {
+            throw new Error("Error fetching product -> " + productError);
+        }
+
+        if (!product) {
+            throw new Error("Product not found");
+        }
+
+        await fileHelper.deleteFile(product.imageUrl);
         
         const [deleteProduct, deleteError] = await handle(Product.deleteOne({_id: productId, userId: req.user._id}));
         

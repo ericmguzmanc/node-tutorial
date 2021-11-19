@@ -30,16 +30,18 @@ const authRoutes = require("./routes/auth");
 app.use(express.urlencoded({ extended: true }));
 /**
  * ℹ️ To serve files statically means that the files are not being served by express but served from the file system
- * Using express.static and middleware
+ * Using express.static and middleware, To serve a folder statically means that requests to file in that folder will be handled automatically
  */
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/images", express.static(path.join(__dirname, 'images')));
+
 
 const store = MongoDBStore({
     uri: MONGODB_URI,
     collection: "sessions"
 });
 
-const csrfProtection = csrf();
+// const csrfProtection = csrf();
 
 // ⏳ Session middleware
 app.use(session({
@@ -49,12 +51,12 @@ app.use(session({
     store: store
 }));
 
-app.use(csrfProtection);
+// app.use(csrfProtection);
 app.use(flash());
 
 app.use((req, res, next) => {
     res.locals.isAuthenticated = req.session.isLoggedIn;
-    res.locals.csrfToken = req.csrfToken();
+    res.locals.csrfToken =  null //req.csrfToken();
     next();
  });
 
