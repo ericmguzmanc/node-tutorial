@@ -7,11 +7,22 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 const { handle } = require("../util/functions");
 
+const ITEMS_PER_PAGE = 2;
 
 exports.getProducts = async (req, res, next) => {
     try {
-        let [products, error] = await handle(Product.find());
-        
+        const page = parseInt(req.query.page) || 1;
+        const [countProducts, countError] = await handle(Product.find().countDocuments());
+
+        if (countError) {
+            throw new Error("Error while counting products -> " + countError)
+        }
+
+        const [products, error] = await handle(
+            Product.find()
+                .skip((page - 1) * ITEMS_PER_PAGE)
+                .limit(ITEMS_PER_PAGE)
+        );
         if (error) {
             throw new Error("Error -> " + error);
         }
@@ -19,7 +30,13 @@ exports.getProducts = async (req, res, next) => {
         res.render("shop/product-list", {
             products: products,
             pageTitle: "All Products",
-            path: "/products"
+            path: "/products",
+            currentPage: page,
+            hasNextPage: ITEMS_PER_PAGE * page < countProducts,
+            hasPreviousPage: page > 1,
+            nextPage: page + 1,
+            previousPage: page - 1,
+            lastPage: Math.ceil(countProducts / ITEMS_PER_PAGE)
         });
     } catch (e) {
         const error = new Error(e);
@@ -53,7 +70,18 @@ exports.getProduct = async (req, res, next) => {
 
 exports.getIndex = async (req, res, next) => {
     try {
-        const [products, error] = await handle(Product.find());
+        const page = parseInt(req.query.page) || 1;
+        const [countProducts, countError] = await handle(Product.find().countDocuments());
+
+        if (countError) {
+            throw new Error("Error while counting products -> " + countError)
+        }
+
+        const [products, error] = await handle(
+            Product.find()
+                .skip((page - 1) * ITEMS_PER_PAGE)
+                .limit(ITEMS_PER_PAGE)
+        );
         
         if (error) {
             throw new Error("Error -> " + error);
@@ -62,7 +90,13 @@ exports.getIndex = async (req, res, next) => {
         res.render("shop/index", {
             products: products,
             pageTitle: "Shop",
-            path: "/"
+            path: "/",
+            currentPage: page,
+            hasNextPage: ITEMS_PER_PAGE * page < countProducts,
+            hasPreviousPage: page > 1,
+            nextPage: page + 1,
+            previousPage: page - 1,
+            lastPage: Math.ceil(countProducts / ITEMS_PER_PAGE)
         });
     } catch (e) {
         const error = new Error(e);
