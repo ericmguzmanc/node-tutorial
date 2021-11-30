@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const stripe = require('stripe')('sk_test_51K1UYUByCsyNIPBb6QeBDWnp09gihz7sq6ujU67vrZiNL0QVbxW0XAw7larApOIRQZgmymwg5NRG40XoQWpKkjPf00hfjpqcDh')
 
 const PDFdocument = require("pdfkit");
 
@@ -161,6 +162,97 @@ exports.postCartDeleteProduct = async (req, res, next) => {
         }
         
         res.redirect("/cart");
+    } catch (e) {
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    }
+};
+
+exports.getCheckout = async (req, res, next) => {
+    try {
+        const [userCart, error] = await handle(req.user.populate("cart.items.productId"));
+        
+        if (error) {
+            throw new Error("Error while getting the cart -> " + error);
+        }
+        
+        const cartProducts = userCart.cart.items;
+        let total = 0
+        cartProducts.forEach(p => {
+            total += p.quantity * p.productId.price
+        })
+        
+        const amount = (price) => {
+            console.log(price * 100)
+            return price * 100
+        }
+
+        const stripeSession = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: cartProducts.map(p => {
+                return {
+                    name: p.productId.title,
+                    description: p.productId.description,
+                    amount: Math.ceil(p.productId.price * 100),
+                    currency: 'usd',
+                    quantity: p.quantity
+                }
+            }),
+            success_url: `${req.protocol}://${req.get('host')}/checkout/success`, // => http://localhost:4000
+            cancel_url: `${req.protocol}://${req.get('host')}/checkout/cancel`
+        })
+
+        res.render("shop/checkout", {
+            path: "/checkout",
+            pageTitle: "Checkout",
+            products: cartProducts,
+            totalSum: total,
+            sessionId: stripeSession.id
+        });
+    } catch (e) {
+        const error = new Error(e);
+        error.httpStatusCode = 500;
+        return next(error);
+    }
+}
+
+exports.getCheckoutSuccess = async (req, res, next) => {
+    try {
+        const [userCart, userCartError] = await handle(req.user.populate("cart.items.productId"));
+        
+        if (userCartError) {
+            throw new Error("Error while getting the cart -> " + userCartError);
+        }
+        
+        const cartProducts = userCart.cart.items.map(i => {
+            return {
+                quantity: i.quantity,
+                product: { ...i.productId._doc }
+            }
+        });
+        
+        const order = new Order({
+            user: {
+                email: req.user.email,
+                userId: req.user
+            },
+            products: cartProducts
+        });
+        
+        const [orderSaved, saveOrderError] = await handle(order.save());
+        
+        if (saveOrderError) {
+            throw new Error("Save Error while saving order -> " + saveOrderError);
+        }
+        
+        const [cart, clearCartError] = await handle(req.user.clearCart());
+        
+        if (clearCartError) {
+            throw new Error("Error clearing user cart -> " + clearCartError);
+        }
+        
+        res.redirect("/orders");
     } catch (e) {
         const error = new Error(e);
         error.httpStatusCode = 500;
