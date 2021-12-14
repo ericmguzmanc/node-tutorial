@@ -4,11 +4,11 @@ exports.getProducts = async (req, res, next) => {
     const products = await Product.findAll();
 
     if (products === null) {
-        console.log("No Products Found");
+        console.log("No se encontraron productos");
     } else {
         res.render("shop/product-list", {
             products: products,
-            pageTitle: "All Products",
+            pageTitle: "Todos los productos",
             path: "/products",
         });
     }
@@ -19,7 +19,7 @@ exports.getProduct = async (req, res, next) => {
 
     const product = await Product.findByPk(productId);
     if (product === null) {
-        console.log("No Product Found! 😔");
+        console.log("No se encontraron productos! 😔");
     } else {
         res.render("shop/product-detail", {
             product: product,
@@ -33,11 +33,11 @@ exports.getIndex = async (req, res, next) => {
     const products = await Product.findAll();
 
     if (products === null) {
-        console.log("No Products Available");
+        console.log("No se encontraron productos");
     } else {
         res.render("shop/index", {
             products: products,
-            pageTitle: "Shop",
+            pageTitle: "Tienda",
             path: "/"
         });
     }
@@ -50,7 +50,7 @@ exports.getCart = async (req, res, next) => {
         console.log(cartProducts);
         res.render("shop/cart", {
             path: "/cart",
-            pageTitle: "Your Cart",
+            pageTitle: "Tu Carrito",
             products: cartProducts
         });
     }
@@ -130,7 +130,7 @@ exports.getOrders = async (req, res, next) => {
     if (orders !== null) {
         res.render("shop/orders", {
             path: "/orders",
-            pageTitle: "Your Orders",
+            pageTitle: "Tus Ordenes",
             orders
         });
     }

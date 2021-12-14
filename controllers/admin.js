@@ -3,7 +3,7 @@ const User = require("../models/user");
 
 exports.getAddProduct = (req, res, next) => {
     res.render("admin/edit-product", {
-        pageTitle: "Add Product",
+        pageTitle: "Agregar Producto",
         path: "/admin/add-product",
         editing: false,
     });
@@ -61,7 +61,7 @@ exports.getEditProduct = async (req, res, next) => {
     const product = products[0];
 
     res.render("admin/edit-product", {
-        pageTitle: "Edit Product",
+        pageTitle: "Editar Producto",
         path: "/admin/edit-product",
         editing: editMode,
         product,
@@ -94,11 +94,11 @@ exports.postEditProduct = async (req, res, next) => {
 exports.getProducts = async (req, res, next) => {
     const products = await req.user.getProducts();
     if (products === null) {
-        console.log("No Producs Found! 😔");
+        console.log("No se encontraron productos! 😔");
     } else {
         res.render("admin/products", {
             products,
-            pageTitle: "Admin Products",
+            pageTitle: "Administrar Productos",
             path: "/admin/products",
         });
     }
