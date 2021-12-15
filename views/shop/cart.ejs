@@ -16,10 +16,16 @@
                     </li>
                 <% }) %>
             </ul>
+            
             <hr>
             <div class="centered">
+                <div style="margin: 20px 0;">
+                    <span style="font-weight: bold;">Total en carrito:</span>
+                    <br />
+                    <span style="font-weight: bold; font-size: 1.5rem; color: #DD4A48;"><%= cartTotal %></span>
+                </div>
                 <form action="/create-order" method="post">
-                    <button class="btn" type="submit">Ordenar ahora!</button>
+                    <button class="btn" type="submit">Ordenar ahora! 💸</button>
                 </form>
             </div>
         <% } else { %>

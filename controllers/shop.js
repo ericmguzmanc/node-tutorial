@@ -44,14 +44,15 @@ exports.getIndex = async (req, res, next) => {
 }
 
 exports.getCart = async (req, res, next) => {
-    const userCart = await req.user.getCart();
+    const userCart = await req.user.getCart({ include: ["products"] });
     if (userCart !== null) {
         const cartProducts = await userCart.getProducts();
         console.log(cartProducts);
         res.render("shop/cart", {
             path: "/cart",
             pageTitle: "Tu Carrito",
-            products: cartProducts
+            products: cartProducts,
+            cartTotal: getOrderTotal(userCart.products)
         });
     }
 
@@ -126,7 +127,20 @@ exports.postOrder = async (req, res, next) => {
 };
 
 exports.getOrders = async (req, res, next) => {
-    const orders = await req.user.getOrders({ include: ["products"] });
+    let orders = await req.user.getOrders({ include: ["products"] });
+    console.log(orders)
+
+    orders = orders.map(order => {
+        orderTotal = 0
+        return {
+            ...order,
+            orderTotal: getOrderTotal(order.products)
+        }
+    })
+
+    console.log(orders)
+
+
     if (orders !== null) {
         res.render("shop/orders", {
             path: "/orders",
@@ -135,3 +149,13 @@ exports.getOrders = async (req, res, next) => {
         });
     }
 };
+
+const getOrderTotal = (products) => {
+    let orderTotal = 0
+
+    products.forEach(p =>  {
+        orderTotal += p.price
+    })
+
+    return orderTotal
+}

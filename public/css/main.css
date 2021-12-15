@@ -206,13 +206,13 @@ form {
 }
 
 .btn.danger {
-  color: red;
-  border-color: red;
+  color: #DD4A48;
+  border-color: #DD4A48;
 }
 
 .btn.danger:hover,
 .btn.danger:active {
-  background: red;
+  background: #DD4A48;
   color: white;
 }
 

@@ -7,13 +7,25 @@
         <h1> No hay ordenes todavia! 📭 </h1>
         <% } else { %>
             <ul>
-                <% orders.forEach(order => {  %>
+                <% orders.forEach((order, i) => {  %>
                     <li>
-                        <h1> # <%= order.id %></h1>
+                        <h1> Orden #<%= i + 1 %></h1>
                         <ul>
                             <% order.products.forEach(product => { %>
-                                <li> <%= product.title %> (<%= product.orderItem.quantity %>)</li>
+                                <li style="margin-bottom: 10px;"> 
+                                    <span style="font-weight: bold;">
+                                        <%= product.title %> 
+                                    </span>
+                                    <br />
+                                    Cantidad: <span style="color: gray;"><%= product.orderItem.quantity %></span>
+                                    <br /> 
+                                    Precio: <span style="color: gray;"><%= product.price %></span>
+                                </li>
                             <% }); %>
+                            <span>
+                                <br />
+                                Total de Orden: <span style="color:#DD4A48; font-weight: bold;"><%= order.orderTotal %></span>
+                            </span>
                         </ul>
                     </li>
                 <% }); %>
