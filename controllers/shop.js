@@ -8,7 +8,7 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 const { handle } = require("../util/functions");
 
-const ITEMS_PER_PAGE = 2;
+const ITEMS_PER_PAGE = 3;
 
 exports.getProducts = async (req, res, next) => {
     try {
@@ -119,7 +119,8 @@ exports.getCart = async (req, res, next) => {
         res.render("shop/cart", {
             path: "/cart",
             pageTitle: "Your Cart",
-            products: cartProducts
+            products: cartProducts,
+            cartTotal: getOrderTotalCart(cartProducts),
         });
     } catch (e) {
         const error = new Error(e);
@@ -315,7 +316,8 @@ exports.getOrders = async (req, res, next) => {
         res.render("shop/orders", {
             path: "/orders",
             pageTitle: "Your Orders",
-            orders
+            orders,
+            orderTotal: getOrderTotal(orders),
         });
     } catch (e) {
         const error = new Error(e);
@@ -323,6 +325,34 @@ exports.getOrders = async (req, res, next) => {
         return next(error);
     }
 };
+
+exports.buscar = async (req, res, next) => {
+    try {
+        const [products, error] = await handle(
+            Product.find()
+        );
+        
+        if (error) {
+            throw new Error("Error -> " + error);
+        }
+        
+        res.render("shop/index", {
+            products: products,
+            pageTitle: "Shop",
+            path: "/",
+            // currentPage: page,
+            // hasNextPage: ITEMS_PER_PAGE * page < countProducts,
+            // hasPreviousPage: page > 1,
+            // nextPage: page + 1,
+            // previousPage: page - 1,
+            // lastPage: Math.ceil(countProducts / ITEMS_PER_PAGE)
+        });
+    } catch (e) {
+        const error = new Error(e)
+        error.httpStatusCode = 500
+        return next(error)
+    }
+}
 
 exports.getInvoice = async (req, res, next) => {
     const orderId = req.params.orderId;
@@ -352,7 +382,7 @@ exports.getInvoice = async (req, res, next) => {
         pdf.pipe(fs.createWriteStream(invoicePath));
         pdf.pipe(res); // Remember res is a writeble stream
 
-        pdf.fontSize(26).text("Invoice", {
+        pdf.fontSize(26).text("Factura", {
             underline: true
         });
 
@@ -375,7 +405,7 @@ exports.getInvoice = async (req, res, next) => {
 
         pdf.text(" ");
 
-        pdf.text("Total Price: $" + totalPrice, { 
+        pdf.text("Precio total: $" + totalPrice, { 
             align: "right"
         });
 
@@ -401,4 +431,28 @@ exports.getInvoice = async (req, res, next) => {
         e.httpStatusCode = 500;
         next(e);
     }
+
 };
+
+const getOrderTotalCart = (products) => {
+    let orderTotal = 0
+
+    products.forEach(p =>  {
+        orderTotal += p.productId.price
+    })
+
+    return orderTotal
+}
+
+const getOrderTotal = (orders) => {
+    let orderTotal = 0
+
+
+    orders.forEach(p =>  {
+        p.products.forEach(ps => {
+            orderTotal += ps.product.price
+        })
+    })
+
+    return orderTotal
+}

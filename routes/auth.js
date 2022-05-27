@@ -17,9 +17,9 @@ router.post(
     [
         body("email")
             .isEmail()
-            .withMessage("Please enter a valid email address")
+            .withMessage("Por favor entre una dirección de correo válida")
             .normalizeEmail(),
-        body("password", "Password has to be valid.")
+        body("password", "El password tiene que ser válido, min 5 caracteres.")
             .isLength({ min: 5 })
             .isAlphanumeric()
             .trim()
@@ -31,7 +31,7 @@ router.post(
     [
         check("email")
             .isEmail()
-            .withMessage("Email is invalid.")
+            .withMessage("El email es inválido.")
             .custom(async (value, {req}) => {
                 const [userExists, userExistsError] = await handle(User.findOne({email: value}));
 
@@ -46,7 +46,7 @@ router.post(
             .normalizeEmail(),
         body(
             "password",
-            "Please enter a password with only numbers and text and at least 5 characters."
+            "Por favor entre un password alfanumerico con mínimo 5 caracteres."
             )
             .isLength({ min: 5 })
             .isAlphanumeric()

@@ -13,7 +13,7 @@ const errorController = require("./controllers/error");
 const database = require("./util/database");
 const {mongoDBStore} = require("./util/database");
 
-const MONGODB_URI = "mongodb+srv://ericmguzmanc:AHS2kRtrU5NdbiN3@cluster0.sypp8.mongodb.net/shop?retryWrites=true&w=majority";
+const MONGODB_URI = "mongodb+srv://ericmguzmanc:2JLjjfcAEup8MdvV@cluster0.sypp8.mongodb.net/shop?retryWrites=true&w=majority";
 
 const User = require("./models/user");
 

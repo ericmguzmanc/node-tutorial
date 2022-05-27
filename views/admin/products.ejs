@@ -25,16 +25,16 @@
                                 </p>
                             </div>
                             <div class="card__actions">
-                                <a href="/admin/edit-product/<%= product._id %>?edit=true" class="btn">Edit ✍🏼</a>
+                                <a href="/admin/edit-product/<%= product._id %>?edit=true" class="btn">Editar ✍🏼</a>
                                 <!-- <input type="hidden" name="_csrf" value="<%=csrfToken%>"> -->
                                 <input type="hidden" value="<%= product._id %>" name="productId">
-                                <button class="btn" type="button" onclick="deleteProduct(this)">Delete 🗑 </button>
+                                <button class="btn" type="button" onclick="deleteProduct(this)">Borrar 🗑 </button>
                             </div>
                         </article>
                     <% } %>
                 </div>
             <% } else { %>
-                <h1>No Products Found! 😔</h1>
+                <h1>No se encontraron productos! 😔</h1>
             <% } %>
         </main>
 <%- include("../includes/end.ejs") %>

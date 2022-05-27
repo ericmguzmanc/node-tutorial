@@ -64,7 +64,7 @@ exports.postLogin = async (req, res, next) => {
         return res.status(422).render("auth/login", {
             path: "/login",
             pageTitle: "Login",
-            errorMessage: "Invalid email",
+            errorMessage: "Email Inválido",
             oldInput: {
                 email: email,
                 password: password
@@ -92,7 +92,7 @@ exports.postLogin = async (req, res, next) => {
     return res.status(422).render("auth/login", {
         path: "/login",
         pageTitle: "Login",
-        errorMessage: "Invalid password",
+        errorMessage: "Password Inválido",
         oldInput: {
             email: email,
             password: password

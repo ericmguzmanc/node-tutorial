@@ -42,13 +42,13 @@ router.get("/products", isAuth, adminController.getProducts);
 router.post("/add-product",
     upload.single("image"),
     [
-        body("title", "Please enter a valid title")
+        body("title", "Por favor escriba un título válido")
             .isString()
             .isLength({ min: 3 })
             .trim(),
-        body("price", "Please enter a valid price e.g. 9.00")
+        body("price", "Por favor entre un precio válido e.g. 9.00")
             .isFloat(),
-        body("description", "Please enter a valid description of min 5 and max 400")
+        body("description", "Por favor entre una descripción válida min 5 and max 400")
             .isLength({ min: 5, max: 400 })
             .trim(),
         ], 
@@ -60,13 +60,13 @@ router.get("/edit-product/:productId", isAuth, adminController.getEditProduct);
 router.post("/edit-product", 
     upload.single("image"),
     [
-        body("title", "Please enter a valid title")
+        body("title", "Por favor entre un título válido")
             .isString()
             .isLength({ min: 3 })
             .trim(),
-        body("price", "Please enter a valid price e.g. 9.00")
+        body("price", "Por favor entre un precio válido e.g. 9.00")
             .isFloat(),
-        body("description", "Please enter a valid description of min 5 and max 400")
+        body("description", "Por favor entre una descripción válida min 5 and max 400")
             .isLength({ min: 5, max: 400 })
             .trim()
     ], 
